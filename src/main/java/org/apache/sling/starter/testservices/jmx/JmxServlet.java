@@ -28,6 +28,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 
+import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonWriter;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
@@ -55,18 +58,14 @@ public class JmxServlet extends SlingAllMethodsServlet {
             response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_OK);
 
-            // list MBean names under the domain "org.apache.sling"
-            response.getWriter().write("[");
-            boolean first = true;
+            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
             for (ObjectName name : server.queryNames(queryName, null)) {
-                if (first) {
-                    first = false;
-                } else {
-                    response.getWriter().write(",");
-                }
-                response.getWriter().write("\"" + name + "\"");
+                arrayBuilder.add(name.toString());
             }
-            response.getWriter().write("]");
+
+            try (JsonWriter writer = Json.createWriter(response.getWriter())) {
+                writer.writeArray(arrayBuilder.build());
+            }
         } catch (MalformedObjectNameException e) {
             throw new ServletException(e);
         }
